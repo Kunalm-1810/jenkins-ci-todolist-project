@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-    triggers {  
+    triggers {
         githubPush()
     }
 
@@ -16,7 +16,6 @@ pipeline {
 
     tools {
         nodejs 'NodeJS-18'
-        
     }
 
     stages {
@@ -34,12 +33,12 @@ pipeline {
                         dir('frontend') {
                             withSonarQubeEnv('sonarqube-server') {
                                 script {
-                                    def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallations'
+                                    def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                                     sh "${scannerHome}/bin/sonar-scanner \
                                       -Dsonar.projectKey=mern-frontend \
                                       -Dsonar.sources=src \
                                       -Dsonar.exclusions=node_modules/**"
-                                
+                                }
                             }
                         }
                     }
@@ -53,7 +52,8 @@ pipeline {
                                     sh "${scannerHome}/bin/sonar-scanner \
                                         -Dsonar.projectKey=mern-backend \
                                         -Dsonar.sources=. \
-                                        -Dsonar.exclusions=node_modules/**"                           
+                                        -Dsonar.exclusions=node_modules/**"
+                                }
                             }
                         }
                     }
@@ -200,8 +200,8 @@ pipeline {
                 sh '''
                     git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo
-                    yq e ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" -i k8s/fe_deployment.yaml
-                    yq e ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" -i k8s/be_deployment.yaml
+                    yq -i ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" k8s/fe_deployment.yaml
+                    yq -i ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" k8s/be_deployment.yaml
                     git config user.email "jenkins@ci.com"
                     git config user.name "Jenkins"
                     git add k8s/fe_deployment.yaml k8s/be_deployment.yaml
