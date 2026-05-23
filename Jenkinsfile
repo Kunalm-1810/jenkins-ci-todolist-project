@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-triggers {
+    triggers {
         githubPush()
     }
 
@@ -11,14 +11,12 @@ triggers {
         IMAGE_TAG              = "v${BUILD_NUMBER}"
         FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
         BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
-        DEPLOYMENT_REPO        = 'https://github.com/<your-org>/<your-k8s-manifests-repo>.git'
+        DEPLOYMENT_REPO        = 'https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git'
     }
 
     tools {
         nodejs 'NodeJS-18'
     }
-
-   
 
     stages {
 
@@ -200,13 +198,13 @@ triggers {
                 sh '''
                     git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo
-                    sed -i "s|image: .*mern-frontend.*|image: ${FE_IMAGE}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
-                    sed -i "s|image: .*mern-backend.*|image: ${BE_IMAGE}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
+                    yq e ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" -i k8s/fe_deployment.yaml
+                    yq e ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" -i k8s/be_deployment.yaml
                     git config user.email "jenkins@ci.com"
                     git config user.name "Jenkins"
-                    git add k8s/frontend-deployment.yaml k8s/backend-deployment.yaml
+                    git add k8s/fe_deployment.yaml k8s/be_deployment.yaml
                     git commit -m "Update image tags to ${IMAGE_TAG}"
-                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/<your-org>/<your-k8s-manifests-repo>.git main
+                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git main
                     cd .. && rm -rf k8s-repo
                 '''
             }
