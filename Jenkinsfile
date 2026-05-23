@@ -74,6 +74,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
+                            sh 'mkdir -p reports'
                             dependencyCheck(
                                 additionalArguments: '--scan . --format HTML --format XML --out reports/',
                                 odcInstallation: 'OWASP-DC'
@@ -85,6 +86,7 @@ pipeline {
                 stage('Backend') {
                     steps {
                         dir('backend') {
+                            sh 'mkdir -p reports'
                             dependencyCheck(
                                 additionalArguments: '--scan . --format HTML --format XML --out reports/',
                                 odcInstallation: 'OWASP-DC'
