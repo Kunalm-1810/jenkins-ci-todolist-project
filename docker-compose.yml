@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+
+  mongo:
+    image: mongo:7.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mern-network
+
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "3500:3500"
+    environment:
+      - MONGO_CONN_STR=mongodb://mongo:27017/todolist
+    depends_on:
+      - mongo
+    networks:
+      - mern-network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend:3500/api/tasks
+    depends_on:
+      - backend
+    networks:
+      - mern-network
+
+volumes:
+  mongo-data:
+
+networks:
+  mern-network:
+    driver: bridge

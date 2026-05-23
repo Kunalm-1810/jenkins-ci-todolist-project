@@ -1,0 +1,56 @@
+# ============================================================
+# Jenkins CI Server - Pre-requisites Setup (Ubuntu 22.04)
+# ============================================================
+
+# Update system
+sudo apt update -y && sudo apt upgrade -y
+
+# ── Java (required for Jenkins) ──────────────────────────────
+sudo apt install -y openjdk-17-jdk
+java -version
+
+# ── Git ──────────────────────────────────────────────────────
+sudo apt install -y git
+git --version
+
+# ── Jenkins ──────────────────────────────────────────────────
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" \
+  | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update && sudo apt install -y jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+# Get initial admin password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# ── Docker ───────────────────────────────────────────────────
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Allow Jenkins to run Docker commands
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+
+# ── Trivy ────────────────────────────────────────────────────
+sudo apt-get install -y wget apt-transport-https gnupg
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+echo deb https://aquasecurity.github.io/trivy-repo/deb generic main \
+  | sudo tee /etc/apt/sources.list.d/trivy.list
+sudo apt-get update && sudo apt-get install -y trivy
+trivy --version
+
+# ── AWS CLI (for ECR push) ───────────────────────────────────
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt install -y unzip
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version

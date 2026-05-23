@@ -1,0 +1,225 @@
+pipeline {
+    agent any
+
+triggers {
+        githubPush()
+    }
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        DOCKERHUB_USERNAME     = "${DOCKERHUB_CREDENTIALS_USR}"
+        IMAGE_TAG              = "v${BUILD_NUMBER}"
+        FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
+        BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
+        DEPLOYMENT_REPO        = 'https://github.com/<your-org>/<your-k8s-manifests-repo>.git'
+    }
+
+    tools {
+        nodejs 'NodeJS-18'
+    }
+
+   
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        dir('frontend') {
+                            withSonarQubeEnv('SonarQube') {
+                                sh '''
+                                    sonar-scanner \
+                                      -Dsonar.projectKey=mern-frontend \
+                                      -Dsonar.sources=src \
+                                      -Dsonar.exclusions=node_modules/**
+                                '''
+                            }
+                        }
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        dir('backend') {
+                            withSonarQubeEnv('SonarQube') {
+                                sh '''
+                                    sonar-scanner \
+                                      -Dsonar.projectKey=mern-backend \
+                                      -Dsonar.sources=. \
+                                      -Dsonar.exclusions=node_modules/**
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('OWASP Dependency Check') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        dir('frontend') {
+                            dependencyCheck(
+                                additionalArguments: '--scan . --format HTML --format XML --out reports/',
+                                odcInstallation: 'OWASP-DC'
+                            )
+                            dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+                        }
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        dir('backend') {
+                            dependencyCheck(
+                                additionalArguments: '--scan . --format HTML --format XML --out reports/',
+                                odcInstallation: 'OWASP-DC'
+                            )
+                            dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Trivy File Scan') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        sh '''
+                            trivy fs \
+                              --severity HIGH,CRITICAL \
+                              --format table \
+                              -o trivy-frontend-fs-report.txt \
+                              ./frontend
+                        '''
+                        archiveArtifacts artifacts: 'trivy-frontend-fs-report.txt'
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        sh '''
+                            trivy fs \
+                              --severity HIGH,CRITICAL \
+                              --format table \
+                              -o trivy-backend-fs-report.txt \
+                              ./backend
+                        '''
+                        archiveArtifacts artifacts: 'trivy-backend-fs-report.txt'
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        sh "docker build -t ${FE_IMAGE}:${IMAGE_TAG} ./frontend"
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        sh "docker build -t ${BE_IMAGE}:${IMAGE_TAG} ./backend"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Compose Validation') {
+            steps {
+                sh '''
+                    docker compose up -d
+                    sleep 20
+                    docker compose ps
+                    docker compose down
+                '''
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                sh '''
+                    echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                    docker push ${FE_IMAGE}:${IMAGE_TAG}
+                    docker push ${BE_IMAGE}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            parallel {
+                stage('Frontend') {
+                    steps {
+                        sh '''
+                            trivy image \
+                              --exit-code 0 \
+                              --severity HIGH,CRITICAL \
+                              --format table \
+                              -o trivy-frontend-image-report.txt \
+                              ${FE_IMAGE}:${IMAGE_TAG}
+                        '''
+                        archiveArtifacts artifacts: 'trivy-frontend-image-report.txt'
+                    }
+                }
+                stage('Backend') {
+                    steps {
+                        sh '''
+                            trivy image \
+                              --exit-code 0 \
+                              --severity HIGH,CRITICAL \
+                              --format table \
+                              -o trivy-backend-image-report.txt \
+                              ${BE_IMAGE}:${IMAGE_TAG}
+                        '''
+                        archiveArtifacts artifacts: 'trivy-backend-image-report.txt'
+                    }
+                }
+            }
+        }
+
+        stage('Update Deployment Files') {
+            environment {
+                GIT_CREDENTIALS = credentials('github-credentials')
+            }
+            steps {
+                sh '''
+                    git clone ${DEPLOYMENT_REPO} k8s-repo
+                    cd k8s-repo
+                    sed -i "s|image: .*mern-frontend.*|image: ${FE_IMAGE}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
+                    sed -i "s|image: .*mern-backend.*|image: ${BE_IMAGE}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
+                    git config user.email "jenkins@ci.com"
+                    git config user.name "Jenkins"
+                    git add k8s/frontend-deployment.yaml k8s/backend-deployment.yaml
+                    git commit -m "Update image tags to ${IMAGE_TAG}"
+                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/<your-org>/<your-k8s-manifests-repo>.git main
+                    cd .. && rm -rf k8s-repo
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker rmi ${FE_IMAGE}:${IMAGE_TAG} ${BE_IMAGE}:${IMAGE_TAG} || true"
+            cleanWs()
+        }
+        failure {
+            echo "Pipeline failed — check stage logs above."
+        }
+    }
+}
