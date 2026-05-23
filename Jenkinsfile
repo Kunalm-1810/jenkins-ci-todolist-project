@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-    triggers {
+    triggers {  
         githubPush()
     }
 
@@ -31,7 +31,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
-                            withSonarQubeEnv('SonarQube') {
+                            withSonarQubeEnv('sonarqube-server') {
                                 sh '''
                                     sonar-scanner \
                                       -Dsonar.projectKey=mern-frontend \
@@ -45,7 +45,7 @@ pipeline {
                 stage('Backend') {
                     steps {
                         dir('backend') {
-                            withSonarQubeEnv('SonarQube') {
+                            withSonarQubeEnv('sonarqube-server') {
                                 sh '''
                                     sonar-scanner \
                                       -Dsonar.projectKey=mern-backend \
