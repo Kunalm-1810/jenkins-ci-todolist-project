@@ -61,3 +61,11 @@ yq installation for yaml update
 sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
 sudo chmod +x /usr/bin/yq
 yq -i --version
+
+
+owasp dependncy 
+
+cd /opt
+sudo wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
+sudo unzip dependency-check-10.0.4-release.zip
+sudo chmod +x /opt/dependency-check/bin/dependency-check.sh
