@@ -77,7 +77,7 @@ pipeline {
                         dir('frontend') {
                             sh 'mkdir -p reports'
                             dependencyCheck(
-                                additionalArguments: "--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ${NVD_API_KEY}",
+                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ' + NVD_API_KEY,
                                 odcInstallation: 'OWASP-DC'
                             )
                             dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
@@ -89,7 +89,7 @@ pipeline {
                         dir('backend') {
                             sh 'mkdir -p reports'
                             dependencyCheck(
-                                additionalArguments: "--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ${NVD_API_KEY}",
+                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ' + NVD_API_KEY,
                                 odcInstallation: 'OWASP-DC'
                             )
                             dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
