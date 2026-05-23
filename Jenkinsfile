@@ -12,6 +12,7 @@ pipeline {
         FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
         BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
         DEPLOYMENT_REPO        = 'https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git'
+        NVD_API_KEY            = credentials('nvd-api-key')
     }
 
     tools {
@@ -76,7 +77,7 @@ pipeline {
                         dir('frontend') {
                             sh 'mkdir -p reports'
                             dependencyCheck(
-                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate',
+                                additionalArguments: "--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ${NVD_API_KEY}",
                                 odcInstallation: 'OWASP-DC'
                             )
                             dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
@@ -88,7 +89,7 @@ pipeline {
                         dir('backend') {
                             sh 'mkdir -p reports'
                             dependencyCheck(
-                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate',
+                                additionalArguments: "--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ${NVD_API_KEY}",
                                 odcInstallation: 'OWASP-DC'
                             )
                             dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
@@ -106,6 +107,7 @@ pipeline {
                             trivy fs \
                               --severity HIGH,CRITICAL \
                               --format table \
+                              --cache-dir /tmp/trivy-cache-fe \
                               -o trivy-frontend-fs-report.txt \
                               ./frontend
                         '''
@@ -118,6 +120,7 @@ pipeline {
                             trivy fs \
                               --severity HIGH,CRITICAL \
                               --format table \
+                              --cache-dir /tmp/trivy-cache-be \
                               -o trivy-backend-fs-report.txt \
                               ./backend
                         '''
