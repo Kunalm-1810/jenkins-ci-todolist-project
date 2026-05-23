@@ -16,7 +16,7 @@ pipeline {
 
     tools {
         nodejs 'NodeJS-18'
-        sonarRunner 'sonar-scanner'
+        
     }
 
     stages {
@@ -33,12 +33,13 @@ pipeline {
                     steps {
                         dir('frontend') {
                             withSonarQubeEnv('sonarqube-server') {
-                                sh '''
-                                    sonar-scanner \
+                                script {
+                                    def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallations'
+                                    sh "${scannerHome}/bin/sonar-scanner \
                                       -Dsonar.projectKey=mern-frontend \
                                       -Dsonar.sources=src \
-                                      -Dsonar.exclusions=node_modules/**
-                                '''
+                                      -Dsonar.exclusions=node_modules/**"
+                                
                             }
                         }
                     }
@@ -47,12 +48,12 @@ pipeline {
                     steps {
                         dir('backend') {
                             withSonarQubeEnv('sonarqube-server') {
-                                sh '''
-                                    sonar-scanner \
-                                      -Dsonar.projectKey=mern-backend \
-                                      -Dsonar.sources=. \
-                                      -Dsonar.exclusions=node_modules/**
-                                '''
+                                script {
+                                    def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                                    sh "${scannerHome}/bin/sonar-scanner \
+                                        -Dsonar.projectKey=mern-backend \
+                                        -Dsonar.sources=. \
+                                        -Dsonar.exclusions=node_modules/**"                           
                             }
                         }
                     }
