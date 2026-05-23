@@ -16,6 +16,7 @@ pipeline {
 
     tools {
         nodejs 'NodeJS-18'
+        sonarRunnerInstallation 'sonar-scanner'
     }
 
     stages {
