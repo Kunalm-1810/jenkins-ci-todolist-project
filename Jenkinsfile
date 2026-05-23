@@ -158,11 +158,13 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                sh '''
-                    echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
-                    docker push ${FE_IMAGE}:${IMAGE_TAG}
-                    docker push ${BE_IMAGE}:${IMAGE_TAG}
-                '''
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push ${FE_IMAGE}:${IMAGE_TAG}
+                        docker push ${BE_IMAGE}:${IMAGE_TAG}
+                    '''
+                }
             }
         }
 

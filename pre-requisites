@@ -63,7 +63,7 @@ sudo chmod +x /usr/bin/yq
 yq -i --version
 
 
-owasp dependncy installation
+OWASP dependncy installation
 
 cd /opt
 sudo wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
