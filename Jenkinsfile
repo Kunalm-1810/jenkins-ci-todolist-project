@@ -41,8 +41,7 @@ pipeline {
                                       -Dsonar.projectKey=mern-frontend \
                                       -Dsonar.sources=src \
                                       -Dsonar.exclusions=node_modules/** \
-                                      -Dsonar.host.url=$SONAR_HOST_URL \
-                                      -Dsonar.token=$SONAR_AUTH_TOKEN
+                                      
                                     """
 
                                 }
@@ -61,8 +60,7 @@ pipeline {
                                         -Dsonar.projectKey=mern-backend \
                                         -Dsonar.sources=. \
                                         -Dsonar.exclusions=node_modules/** \
-                                        -Dsonar.host.url=$SONAR_HOST_URL \
-                                        -Dsonar.token=$SONAR_AUTH_TOKEN
+                                       
                                     """
                                 }
                             }
