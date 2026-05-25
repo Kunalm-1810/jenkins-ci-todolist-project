@@ -79,7 +79,7 @@ pipeline {
         }
 
         stage('OWASP Dependency Check') {
-            parallel {
+                 {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
@@ -90,6 +90,7 @@ pipeline {
                                   --exclude "**/node_modules/**" \
                                   --format HTML \
                                   --out dependency-check-frontend-report
+                                  --noupdate
                             '''
                             archiveArtifacts artifacts: 'dependency-check-frontend-report/**'
                         }
@@ -105,6 +106,7 @@ pipeline {
                                   --exclude "**/node_modules/**" \
                                   --format HTML \
                                   --out dependency-check-backend-report
+                                  --noupdate
                             '''
                             archiveArtifacts artifacts: 'dependency-check-backend-report/**'
                         }
