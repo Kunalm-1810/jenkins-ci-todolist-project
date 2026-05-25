@@ -12,6 +12,7 @@ pipeline {
         FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
         BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
         DEPLOYMENT_REPO        = 'https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git'
+
     }
 
     tools {
@@ -38,6 +39,8 @@ pipeline {
                                       -Dsonar.projectKey=mern-frontend \
                                       -Dsonar.sources=src \
                                       -Dsonar.exclusions=node_modules/**"
+                                      -Dsonar.host.url=$SONAR_HOST_URL \
+                                      -Dsonar.token=$SONAR_AUTH_TOKEN
                                 }
                             }
                         }
@@ -53,6 +56,8 @@ pipeline {
                                         -Dsonar.projectKey=mern-backend \
                                         -Dsonar.sources=. \
                                         -Dsonar.exclusions=node_modules/**"
+                                        -Dsonar.host.url=$SONAR_HOST_URL \
+                                        -Dsonar.token=$SONAR_AUTH_TOKEN
                                 }
                             }
                         }
