@@ -12,7 +12,6 @@ pipeline {
         FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
         BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
         DEPLOYMENT_REPO        = 'https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git'
-        NVD_API_KEY            = credentials('nvd-api-key')
     }
 
     tools {
@@ -75,24 +74,30 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
-                            sh 'mkdir -p reports'
-                            dependencyCheck(
-                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ' + NVD_API_KEY,
-                                odcInstallation: 'OWASP-DC'
-                            )
-                            dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+                            sh '''
+                                /opt/dependency-check/bin/dependency-check.sh \
+                                  --project mern-frontend \
+                                  --scan . \
+                                  --exclude "**/node_modules/**" \
+                                  --format HTML \
+                                  --out dependency-check-frontend-report
+                            '''
+                            archiveArtifacts artifacts: 'dependency-check-frontend-report/**'
                         }
                     }
                 }
                 stage('Backend') {
                     steps {
                         dir('backend') {
-                            sh 'mkdir -p reports'
-                            dependencyCheck(
-                                additionalArguments: '--scan . --format HTML --format XML --out reports/ --noupdate --nvdApiKey ' + NVD_API_KEY,
-                                odcInstallation: 'OWASP-DC'
-                            )
-                            dependencyCheckPublisher pattern: 'reports/dependency-check-report.xml'
+                            sh '''
+                                /opt/dependency-check/bin/dependency-check.sh \
+                                  --project mern-backend \
+                                  --scan . \
+                                  --exclude "**/node_modules/**" \
+                                  --format HTML \
+                                  --out dependency-check-backend-report
+                            '''
+                            archiveArtifacts artifacts: 'dependency-check-backend-report/**'
                         }
                     }
                 }

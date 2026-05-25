@@ -6,7 +6,8 @@
 sudo apt update -y && sudo apt upgrade -y
 
 # ── Java (required for Jenkins) ──────────────────────────────
-sudo apt install -y openjdk-17-jdk
+sudo apt update
+sudo apt install fontconfig openjdk-21-jre
 java -version
 
 # ── Git ──────────────────────────────────────────────────────
@@ -14,13 +15,15 @@ sudo apt install -y git
 git --version
 
 # ── Jenkins ──────────────────────────────────────────────────
-sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" \
-  | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt update && sudo apt install -y jenkins
-sudo systemctl start jenkins
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update
+sudo apt install jenkins
 sudo systemctl enable jenkins
+sudo systemctl start jenkins
 
 # Get initial admin password
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
@@ -37,16 +40,25 @@ sudo systemctl start docker
 sudo systemctl enable docker
 
 # Allow Jenkins to run Docker commands
-sudo usermod -aG docker jenkins
+sudo usermod -aG docker ubuntu && newgrp docker
+sudo usermod -aG docker jenkins && newgrp docker
 sudo systemctl restart jenkins
 
 # ── Trivy ────────────────────────────────────────────────────
-sudo apt-get install -y wget apt-transport-https gnupg
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-echo deb https://aquasecurity.github.io/trivy-repo/deb generic main \
-  | sudo tee /etc/apt/sources.list.d/trivy.list
+# Add Trivy key properly
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | \
+  gpg --dearmor | sudo tee /etc/apt/keyrings/trivy.gpg > /dev/null
+
+# Add repo with signed-by
+echo "deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | \
+  sudo tee /etc/apt/sources.list.d/trivy.list > /dev/null
+
+
+
+# add and install
 sudo apt-get update && sudo apt-get install -y trivy
 trivy --version
+
 
 # ── AWS CLI (for ECR push) ───────────────────────────────────
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -69,4 +81,35 @@ cd /opt
 sudo wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
 sudo unzip dependency-check-10.0.4-release.zip
 sudo chmod +x /opt/dependency-check/bin/dependency-check.sh
- 
+
+docker run -d \
+  --name sonarqube \
+  --restart always \
+  -p 9000:9000 \
+  sonarqube:lts-community 
+
+
+
+
+ plugins Required in jenkins:
+
+GitHub Integration
+
+SonarQube Scanner
+
+NodeJS
+
+Docker
+
+Docker Compose Build Step
+
+OWASP Dependency-Check
+
+Optional but useful:
+Blue Ocean — better pipeline visualization
+
+AWS → IAM role on EC2, no plugin needed
+
+trivy → CLI tool, no plugin needed
+
+yq → CLI tool, no plugin needed
