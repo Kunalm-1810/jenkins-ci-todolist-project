@@ -229,18 +229,18 @@ pipeline {
                 GIT_CREDENTIALS = credentials('github-credentials')
             }
             steps {
-                sh '''
+                sh """
                     git clone ${DEPLOYMENT_REPO} k8s-repo
-                    cd k8s-repo && \
-                    yq -i ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" frontend/fe_deployment.yaml && \
-                    yq -i ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" backend/be_deployment.yaml && \
-                    git config user.email "jenkins@ci.com" && \
-                    git config user.name "Jenkins" && \
-                    git add frontend/fe_deployment.yaml backend/be_deployment.yaml && \
-                    git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes to commit" && \
+                    cd k8s-repo && \\
+                    yq -i '.spec.template.spec.containers[0].image = "${FE_IMAGE}:${IMAGE_TAG}"' frontend/fe_deployment.yaml && \\
+                    yq -i '.spec.template.spec.containers[0].image = "${BE_IMAGE}:${IMAGE_TAG}"' backend/be_deployment.yaml && \\
+                    git config user.email "jenkins@ci.com" && \\
+                    git config user.name "Jenkins" && \\
+                    git add frontend/fe_deployment.yaml backend/be_deployment.yaml && \\
+                    git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes to commit" && \\
                     git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git main
                     cd .. && rm -rf k8s-repo
-                '''
+                """
             }
         }
     }
