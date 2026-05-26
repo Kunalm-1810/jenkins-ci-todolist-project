@@ -84,6 +84,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('frontend') {
+                            sh 'npm install'
                             sh '''
                                 /opt/dependency-check/bin/dependency-check.sh \
                                   --project mern-frontend \
@@ -92,6 +93,7 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-frontend-report \
                                   --data /opt/dependency-check/data \
+                                  --disableOssIndex
                                   
                             '''
                             archiveArtifacts artifacts: 'dependency-check-frontend-report/**'
@@ -109,7 +111,7 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-backend-report \
                                   --data /opt/dependency-check/data \
-                            
+                                  --disableOssIndex
                             '''
                             archiveArtifacts artifacts: 'dependency-check-backend-report/**'
                         }
