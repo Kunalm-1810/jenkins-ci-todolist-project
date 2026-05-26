@@ -7,13 +7,8 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        DOCKERHUB_USERNAME     = "${DOCKERHUB_CREDENTIALS_USR}"
         IMAGE_TAG              = "v${BUILD_NUMBER}"
-        FE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-frontend"
-        BE_IMAGE               = "${DOCKERHUB_USERNAME}/mern-backend"
         DEPLOYMENT_REPO        = 'https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git'
-
-
     }
 
     tools {
@@ -25,6 +20,15 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Set Image Names') {
+            steps {
+                script {
+                    env.FE_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/mern-frontend"
+                    env.BE_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/mern-backend"
+                }
             }
         }
 
@@ -40,10 +44,8 @@ pipeline {
                                       ${scannerHome}/bin/sonar-scanner \
                                       -Dsonar.projectKey=mern-frontend \
                                       -Dsonar.sources=src \
-                                      -Dsonar.exclusions=node_modules/** \
-                                      
+                                      -Dsonar.exclusions=node_modules/**
                                     """
-
                                 }
                             }
                         }
@@ -59,8 +61,7 @@ pipeline {
                                         ${scannerHome}/bin/sonar-scanner \
                                         -Dsonar.projectKey=mern-backend \
                                         -Dsonar.sources=. \
-                                        -Dsonar.exclusions=node_modules/** \
-                                       
+                                        -Dsonar.exclusions=node_modules/**
                                     """
                                 }
                             }
@@ -152,12 +153,12 @@ pipeline {
             parallel {
                 stage('Frontend') {
                     steps {
-                        sh "docker build -t ${FE_IMAGE}:${IMAGE_TAG} ./frontend"
+                        sh "docker build -t ${env.FE_IMAGE}:${IMAGE_TAG} ./frontend"
                     }
                 }
                 stage('Backend') {
                     steps {
-                        sh "docker build -t ${BE_IMAGE}:${IMAGE_TAG} ./backend"
+                        sh "docker build -t ${env.BE_IMAGE}:${IMAGE_TAG} ./backend"
                     }
                 }
             }
@@ -166,23 +167,21 @@ pipeline {
         stage('Docker Compose Validation') {
             steps {
                 sh '''
-                    docker compose up -d
+                    FE_IMAGE=${FE_IMAGE} BE_IMAGE=${BE_IMAGE} IMAGE_TAG=${IMAGE_TAG} docker compose up -d
                     sleep 20
                     docker compose ps
-                    docker compose down
+                    FE_IMAGE=${FE_IMAGE} BE_IMAGE=${BE_IMAGE} IMAGE_TAG=${IMAGE_TAG} docker compose down
                 '''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${FE_IMAGE}:${IMAGE_TAG}
-                        docker push ${BE_IMAGE}:${IMAGE_TAG}
-                    '''
-                }
+                sh '''
+                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    docker push ${FE_IMAGE}:${IMAGE_TAG}
+                    docker push ${BE_IMAGE}:${IMAGE_TAG}
+                '''
             }
         }
 
@@ -240,7 +239,7 @@ pipeline {
 
     post {
         always {
-            sh "docker rmi ${FE_IMAGE}:${IMAGE_TAG} ${BE_IMAGE}:${IMAGE_TAG} || true"
+            sh "docker rmi ${env.FE_IMAGE}:${IMAGE_TAG} ${env.BE_IMAGE}:${IMAGE_TAG} || true"
             cleanWs()
         }
         failure {
