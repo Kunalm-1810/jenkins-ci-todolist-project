@@ -226,7 +226,7 @@ pipeline {
 
         stage('Update Deployment Files') {
             environment {
-                GIT_CREDENTIALS = credentials(' ')
+                GIT_CREDENTIALS = credentials('github-credentials')
             }
             steps {
                 sh '''

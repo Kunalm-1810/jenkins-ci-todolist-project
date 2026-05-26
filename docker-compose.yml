@@ -28,7 +28,7 @@ services:
     image: ${FE_IMAGE}:${IMAGE_TAG}
     container_name: frontend
     ports:
-      - "80:80"
+      - "8086:80"
     depends_on:
       - backend
     networks:
