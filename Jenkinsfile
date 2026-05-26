@@ -8,7 +8,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         IMAGE_TAG              = "v${BUILD_NUMBER}"
-        DEPLOYMENT_REPO        = "https://github.com/Kunalm-1810/k8s-gitops-config-deployments.git"  // replace with your actual deployment repo
+        DEPLOYMENT_REPO        = "https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git"  // replace with your actual deployment repo
     }
 
     tools {
@@ -232,13 +232,13 @@ pipeline {
                 sh '''
                     git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo
-                    yq -i ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" frontend/fe_deployment.yaml
-                    yq -i ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" backend/be_deployment.yaml
+                    yq -i ".spec.template.spec.containers[0].image = \"${FE_IMAGE}:${IMAGE_TAG}\"" k8s-repo/frontend/fe_deployment.yaml
+                    yq -i ".spec.template.spec.containers[0].image = \"${BE_IMAGE}:${IMAGE_TAG}\"" k8s-repo/backend/be_deployment.yaml
                     git config user.email "jenkins@ci.com"
                     git config user.name "Jenkins"
-                    git add frontend/fe_deployment.yaml backend/be_deployment.yaml
+                    git add k8s-repo/frontend/fe_deployment.yaml k8s-repo/backend/be_deployment.yaml
                     git commit -m "Update image tags to ${IMAGE_TAG}" | echo "No changes to commit"
-                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/k8s-gitops-config-deployments.git main
+                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git main
                     cd .. && rm -rf k8s-repo
                 '''
             }
