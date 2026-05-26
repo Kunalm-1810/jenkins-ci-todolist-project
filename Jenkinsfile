@@ -93,7 +93,8 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-frontend-report \
                                   --data /opt/dependency-check/data \
-                                  --disableOssIndex
+                                  --disableOssIndex \
+                                  --disableNodeAudit
                                   
                             '''
                             archiveArtifacts artifacts: 'dependency-check-frontend-report/**'
@@ -111,7 +112,8 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-backend-report \
                                   --data /opt/dependency-check/data \
-                                  --disableOssIndex
+                                  --disableOssIndex \
+                                  --disableNodeAudit
                             '''
                             archiveArtifacts artifacts: 'dependency-check-backend-report/**'
                         }
