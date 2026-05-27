@@ -116,4 +116,64 @@ yq → CLI tool, no plugin needed
 
 
 add credentails in jenkins credentails
-and adding tools
+and adding 
+
+
+jenkins manage tools 
+add sonar-Scanner
+git installations
+
+
+jenkins manage system
+in sonarqube installations
+set name sonarqube-server
+url http://ip:9000
+server auth token credentials added 
+
+
+jenkins manage credentails
+add github username and token
+add docker username and token
+add github username and ssh private key
+add sonarqube token
+\
+
+
+
+docker sonarqube conatainer delete
+and
+cleanup EC2
+# Stop services
+sudo systemctl stop jenkins docker 2>/dev/null
+
+# Remove Jenkins
+sudo apt-get remove --purge -y jenkins
+sudo rm -f /etc/apt/sources.list.d/jenkins.list
+sudo rm -f /etc/apt/keyrings/jenkins-keyring.asc
+
+# Remove Docker
+sudo apt-get remove --purge -y docker-ce docker-ce-cli containerd.io
+sudo rm -f /etc/apt/sources.list.d/docker.list
+sudo rm -f /etc/apt/keyrings/docker.asc
+
+# Remove Trivy
+sudo apt-get remove --purge -y trivy
+sudo rm -f /etc/apt/sources.list.d/trivy.list
+sudo rm -f /etc/apt/keyrings/trivy.gpg
+
+# Remove Java
+sudo apt-get remove --purge -y openjdk-21-jdk openjdk-21-jdk-headless openjdk-21-jre openjdk-21-jre-headless
+
+# Remove AWS CLI
+sudo rm -rf /usr/local/aws-cli /usr/local/bin/aws /tmp/aws /tmp/awscliv2.zip
+
+# Remove yq
+sudo rm -f /usr/bin/yq
+
+# Remove OWASP
+sudo rm -rf /opt/dependency-check
+
+# Clean apt
+sudo apt-get autoremove -y
+sudo apt-get clean
+sudo apt-get Update
