@@ -116,6 +116,20 @@ sudo unzip dependency-check-10.0.4-release.zip
 sudo chmod +x /opt/dependency-check/bin/dependency-check.sh
 ```
 
+> After installation, run this command **manually once** to update the NVD vulnerability database before running the pipeline:
+
+```bash
+/opt/dependency-check/bin/dependency-check.sh \
+  --updateonly \
+  --nvdApiKey YOUR_API_KEY
+Run this command manually to only update vulnerability database beacuse update are slow without apikey and it take so much time to update the owasp dependency-check
+For first time it wil take 10 to 15 minutes
+
+```
+
+
+> Get your free NVD API key at https://nvd.nist.gov/developers/request-an-api-key
+
 ### 9. SonarQube (Docker)
 
 ```bash
