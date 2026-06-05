@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
-                    def region    = sh(script: "curl -s http://169.254.169.254/latest/meta-data/placement/region", returnStdout: true).trim()
+                    def region    = sh(script: "aws ec2 describe-availability-zones --query 'AvailabilityZones[0].RegionName' --output text", returnStdout: true).trim()
                     env.AWS_ECR_REGISTRY = "${accountId}.dkr.ecr.${region}.amazonaws.com"
                     env.FE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-frontend"
                     env.BE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-backend"
