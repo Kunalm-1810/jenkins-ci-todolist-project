@@ -6,8 +6,9 @@ pipeline {
     }
 
     environment {
-        IMAGE_TAG              = "v${BUILD_NUMBER}"
-        DEPLOYMENT_REPO        = "https://github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"  // replace with your actual deployment repo
+        IMAGE_TAG        = "v${BUILD_NUMBER}"
+        DEPLOYMENT_REPO  = "https://github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"
+        NVD_API_KEY      = credentials('nvd-api-key')
     }
 
     tools {
@@ -95,9 +96,9 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-frontend-report \
                                   --data /opt/dependency-check/data \
+                                  --nvdApiKey ${NVD_API_KEY} \
                                   --disableOssIndex \
                                   --disableNodeAudit
-                                  
                             '''
                             archiveArtifacts artifacts: 'dependency-check-frontend-report/**'
                         }
@@ -114,6 +115,7 @@ pipeline {
                                   --format HTML \
                                   --out dependency-check-backend-report \
                                   --data /opt/dependency-check/data \
+                                  --nvdApiKey ${NVD_API_KEY} \
                                   --disableOssIndex \
                                   --disableNodeAudit
                             '''
@@ -234,13 +236,13 @@ pipeline {
                 sh """
                     git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo && \\
-                    yq -i '.image.tag = "${IMAGE_TAG}"' frontend/values.yaml && \\
-                    yq -i '.image.tag = "${IMAGE_TAG}"' backend/values.yaml && \\
+                    yq -i '.image.tag = "${IMAGE_TAG}"' charts/frontend/values.yaml && \\
+                    yq -i '.image.tag = "${IMAGE_TAG}"' charts/backend/values.yaml && \\
                     git config user.email "jenkins@ci.com" && \\
                     git config user.name "Jenkins" && \\
-                    git add frontend/values.yaml backend/values.yaml && \\
-                    git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes to commit" && \\
-                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git main
+                    git add charts/frontend/values.yaml charts/backend/values.yaml && \\
+                    git diff --cached --quiet || git commit -m "Update image tags to ${IMAGE_TAG}" && \\
+                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@${DEPLOYMENT_REPO} main
                     cd .. && rm -rf k8s-repo
                 """
             }
