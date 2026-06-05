@@ -6,9 +6,8 @@ pipeline {
     }
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         IMAGE_TAG              = "v${BUILD_NUMBER}"
-        DEPLOYMENT_REPO        = "https://github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git"  // replace with your actual deployment repo
+        DEPLOYMENT_REPO        = "https://github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"  // replace with your actual deployment repo
     }
 
     tools {
@@ -26,8 +25,11 @@ pipeline {
         stage('Set Image Names') {
             steps {
                 script {
-                    env.FE_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/mern-frontend"
-                    env.BE_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/mern-backend"
+                    def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
+                    def region    = sh(script: "aws configure get region", returnStdout: true).trim()
+                    env.AWS_ECR_REGISTRY = "${accountId}.dkr.ecr.${region}.amazonaws.com"
+                    env.FE_IMAGE = "${env.AWS_ECR_REGISTRY}/mern-frontend"
+                    env.BE_IMAGE = "${env.AWS_ECR_REGISTRY}/mern-backend"
                 }
             }
         }
@@ -179,10 +181,10 @@ pipeline {
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Push to AWS ECR') {
             steps {
                 sh '''
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${FE_IMAGE%%/*}
                     docker push ${FE_IMAGE}:${IMAGE_TAG}
                     docker push ${BE_IMAGE}:${IMAGE_TAG}
                 '''
@@ -232,11 +234,11 @@ pipeline {
                 sh """
                     git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo && \\
-                    yq -i '.spec.template.spec.containers[0].image = "${FE_IMAGE}:${IMAGE_TAG}"' frontend/fe_deployment.yaml && \\
-                    yq -i '.spec.template.spec.containers[0].image = "${BE_IMAGE}:${IMAGE_TAG}"' backend/be_deployment.yaml && \\
+                    yq -i '.image.tag = "${IMAGE_TAG}"' frontend/values.yaml && \\
+                    yq -i '.image.tag = "${IMAGE_TAG}"' backend/values.yaml && \\
                     git config user.email "jenkins@ci.com" && \\
                     git config user.name "Jenkins" && \\
-                    git add frontend/fe_deployment.yaml backend/be_deployment.yaml && \\
+                    git add frontend/values.yaml backend/values.yaml && \\
                     git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes to commit" && \\
                     git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@github.com/Kunalm-1810/to-do-list-app-k8s-manifest.git main
                     cd .. && rm -rf k8s-repo
