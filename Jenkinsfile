@@ -177,7 +177,6 @@ pipeline {
                     FE_IMAGE=${FE_IMAGE} BE_IMAGE=${BE_IMAGE} IMAGE_TAG=${IMAGE_TAG} docker compose up -d
                     sleep 20
                     docker compose ps
-                    FE_IMAGE=${FE_IMAGE} BE_IMAGE=${BE_IMAGE} IMAGE_TAG=${IMAGE_TAG} docker compose down
                 '''
             }
         }
