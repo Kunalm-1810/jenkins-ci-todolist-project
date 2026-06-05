@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         IMAGE_TAG        = "v${BUILD_NUMBER}"
-        DEPLOYMENT_REPO  = "https://github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"
+        DEPLOYMENT_REPO  = "github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"
         NVD_API_KEY      = credentials('nvd-api-key')
     }
 
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
-                    def region    = sh(script: "aws configure get region", returnStdout: true).trim()
+                    def region    = sh(script: "curl -s http://169.254.169.254/latest/meta-data/placement/region", returnStdout: true).trim()
                     env.AWS_ECR_REGISTRY = "${accountId}.dkr.ecr.${region}.amazonaws.com"
                     env.FE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-frontend"
                     env.BE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-backend"
@@ -229,12 +229,10 @@ pipeline {
         }
 
         stage('Update Deployment Files') {
-            environment {
-                GIT_CREDENTIALS = credentials('github-credentials')
-            }
             steps {
-                sh """
-                    git clone ${DEPLOYMENT_REPO} k8s-repo
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    sh """
+                    git clone https://${GIT_USER}:${GIT_PASS}@github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git k8s-repo
                     cd k8s-repo && \\
                     yq -i '.image.tag = "${IMAGE_TAG}"' charts/frontend/values.yaml && \\
                     yq -i '.image.tag = "${IMAGE_TAG}"' charts/backend/values.yaml && \\
@@ -242,12 +240,14 @@ pipeline {
                     git config user.name "Jenkins" && \\
                     git add charts/frontend/values.yaml charts/backend/values.yaml && \\
                     git diff --cached --quiet || git commit -m "Update image tags to ${IMAGE_TAG}" && \\
-                    git push https://${GIT_CREDENTIALS_USR}:${GIT_CREDENTIALS_PSW}@${DEPLOYMENT_REPO} main
+                    git push https://${GIT_USER}:${GIT_PASS}@github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git main
                     cd .. && rm -rf k8s-repo
-                """
+                    """
+                }
             }
         }
     }
+     
 
     post {
         always {
