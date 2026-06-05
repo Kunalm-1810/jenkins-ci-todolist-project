@@ -29,8 +29,8 @@ pipeline {
                     def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
                     def region    = sh(script: "aws configure get region", returnStdout: true).trim()
                     env.AWS_ECR_REGISTRY = "${accountId}.dkr.ecr.${region}.amazonaws.com"
-                    env.FE_IMAGE = "${env.AWS_ECR_REGISTRY}/mern-frontend"
-                    env.BE_IMAGE = "${env.AWS_ECR_REGISTRY}/mern-backend"
+                    env.FE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-frontend"
+                    env.BE_IMAGE = "${env.AWS_ECR_REGISTRY}/project-backend"
                 }
             }
         }
