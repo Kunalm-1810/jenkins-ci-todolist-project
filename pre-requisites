@@ -68,7 +68,7 @@ sudo ./aws/install
 aws --version
 
 
-yq installation for yaml update 
+#yq installation for yaml update 
 
 sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
 sudo chmod +x /usr/bin/yq
@@ -177,3 +177,4 @@ sudo rm -rf /opt/dependency-check
 sudo apt-get autoremove -y
 sudo apt-get clean
 sudo apt-get Update
+che3ck
