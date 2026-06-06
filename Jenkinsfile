@@ -160,7 +160,7 @@ pipeline {
             parallel {
                 stage('Frontend') {
                     steps {
-                        sh "docker build --build-arg REACT_APP_BACKEND_URL=https://todolist.kodetechm.com/api/tasks -t ${env.FE_IMAGE}:${IMAGE_TAG} ./frontend"
+                        sh "docker build --no-cache --build-arg REACT_APP_BACKEND_URL=https://todolist.kodetechm.com/api/tasks -t ${env.FE_IMAGE}:${IMAGE_TAG} ./frontend"
                     }
                 }
                 stage('Backend') {
