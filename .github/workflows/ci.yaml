@@ -13,10 +13,10 @@
     contents: read
 
   env:
-    AWS_REGION: ap-south-1
+    #AWS_REGION: ap-south-1
     IMAGE_TAG: v${{ github.run_number }}
-    DEPLOYMENT_REPO: Kunalm-1810/k8s-manifest-deployment-repo-todolist
-    REACT_APP_BACKEND_URL: https://todolist.kodetechm.com/api/tasks
+    #DEPLOYMENT_REPO: Kunalm-1810/k8s-manifest-deployment-repo-todolist
+    #REACT_APP_BACKEND_URL: https://todolist.kodetechm.com/api/tasks
 
   jobs:
 
@@ -35,7 +35,7 @@
             fetch-depth: 0   # full history improves Sonar's blame/age data
 
         - name: SonarQube Scan
-          uses: sonarsource/sonarqube-scan-action@v4
+          uses: sonarsource/sonarqube-scan-action@v6
           with:
             projectBaseDir: ${{ matrix.component }}
             args: >
