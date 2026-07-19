@@ -1,0 +1,217 @@
+  name: CI
+
+  on:
+    push:
+      branches: [main]
+
+  concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+  permissions:
+    id-token: write   # needed for AWS OIDC
+    contents: read
+
+  env:
+    #AWS_REGION: ap-south-1
+    IMAGE_TAG: v${{ github.run_number }}
+    #DEPLOYMENT_REPO: Kunalm-1810/k8s-manifest-deployment-repo-todolist
+    #REACT_APP_BACKEND_URL: https://todolist.kodetechm.com/api/tasks
+
+  jobs:
+
+
+    # ---------- Stage 1: SonarQube code analysis + quality gate ----------
+    sonarqube:
+      runs-on: [self-hosted, Linux, x64]
+      timeout-minutes: 15
+      strategy:
+        fail-fast: false
+        matrix:
+          component: [frontend, backend]
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0   # full history improves Sonar's blame/age data
+
+        - name: SonarQube Scan
+          uses: sonarsource/sonarqube-scan-action@v6
+          with:
+            projectBaseDir: ${{ matrix.component }}
+            args: >
+              "-Dsonar.projectKey=mern-${{ matrix.component }}"
+              "-Dsonar.sources=${{ matrix.component == 'frontend' && 'src' || '.' }}"
+              "-Dsonar.exclusions=node_modules/**"
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+        - name: Quality Gate
+          uses: sonarsource/sonarqube-quality-gate-action@v1
+          timeout-minutes: 10
+          with:
+            scanMetadataReportfile: ${{ matrix.component }}/.scannerwork/report-task.txt
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    # ---------- Stage 2: OWASP Dependency Check (runs after Sonar gate passes) ----------
+    dependency-check:
+      runs-on: [self-hosted, Linux, x64]
+      needs: sonarqube
+      timeout-minutes: 15
+      strategy:
+        fail-fast: false
+        matrix:
+          component: [frontend, backend]
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: actions/setup-node@v4
+          with:
+            node-version: '18'
+            cache: 'npm'
+            cache-dependency-path: ${{ matrix.component }}/package-lock.json
+
+        - name: Install dependencies
+          working-directory: ${{ matrix.component }}
+          run: npm install --legacy-peer-deps
+
+        - name: Dependency Check
+          uses: dependency-check/Dependency-Check_Action@1.1.0
+          with:
+            project: mern-${{ matrix.component }}
+            path: ./${{ matrix.component }}
+            format: HTML
+            out: dependency-check-${{ matrix.component }}-report
+            args: >
+              --exclude "**/node_modules/**"
+              --disableOssIndex
+              --disableNodeAudit
+          env:
+            NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          
+        - name: Post-cleanup report permissions
+          if: always()
+          run: sudo chown -R ubuntu:ubuntu .
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: dependency-check-${{ matrix.component }}-report
+            path: dependency-check-${{ matrix.component }}-report/
+            retention-days: 14
+
+    # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
+    trivy-fs-scan:
+      runs-on: [self-hosted, Linux, x64]
+      needs: sonarqube
+      timeout-minutes: 15
+      strategy:
+        fail-fast: false
+        matrix:
+          component: [frontend, backend]
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Trivy FS Scan
+          uses: aquasecurity/trivy-action@v0.35.0
+          with:
+            scan-type: fs
+            scan-ref: ./${{ matrix.component }}
+            severity: HIGH,CRITICAL
+            format: table
+            output: trivy-${{ matrix.component }}-fs-report.txt
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: trivy-${{ matrix.component }}-fs-report
+            path: trivy-${{ matrix.component }}-fs-report.txt
+            retention-days: 14
+
+    # ---------- Stage 3: Build, scan, and push images (only after both scans pass) ----------
+    build-and-push:
+      runs-on: [self-hosted, Linux, x64]
+      needs: [dependency-check, trivy-fs-scan]
+      timeout-minutes: 30
+      strategy:
+        fail-fast: false
+        matrix:
+          component: [frontend, backend]
+      outputs:
+        image_tag: ${{ env.IMAGE_TAG }}
+      steps:
+        - uses: actions/checkout@v4
+
+        # - name: Configure AWS credentials (OIDC)
+        #   uses: aws-actions/configure-aws-credentials@v4
+        #   with:
+        #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        #     aws-region: ${{ env.AWS_REGION }}
+
+        - name: Login to ECR
+          id: ecr-login
+          uses: aws-actions/amazon-ecr-login@v2
+          env:
+            AWS_REGION: ${{ vars.AWS_REGION }}
+
+        - name: Set image name
+          id: vars
+          run: |
+            REGISTRY=${{ steps.ecr-login.outputs.registry }}
+            echo "image=${REGISTRY}/mern-devsecops-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+
+        - name: Build image
+          run: |
+            if [ "${{ matrix.component }}" = "frontend" ]; then
+              docker build --no-cache \
+                --build-arg REACT_APP_BACKEND_URL=${{ vars.REACT_APP_BACKEND_URL }} \
+                -t ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }} ./frontend
+            else
+              docker build -t ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }} ./backend
+            fi
+
+        - name: Trivy Image Scan
+          uses: aquasecurity/trivy-action@v0.35.0
+          with:
+            image-ref: ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
+            severity: HIGH,CRITICAL
+            format: table
+            exit-code: 0
+            output: trivy-${{ matrix.component }}-image-report.txt
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: trivy-${{ matrix.component }}-image-report
+            path: trivy-${{ matrix.component }}-image-report.txt
+            retention-days: 14
+
+        - name: Push to ECR
+          run: docker push ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
+
+    # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
+    update-manifest:
+      runs-on: [self-hosted, Linux, x64]
+      needs: build-and-push
+      timeout-minutes: 10
+      steps:
+        - name: Checkout deployment repo
+          uses: actions/checkout@v4
+          with:
+            repository: ${{ vars.DEPLOYMENT_REPO }}
+            ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+            path: k8s-repo
+
+        - name: Update image tags
+          run: |
+            cd k8s-repo
+            CLEAN_TAG=$(echo "${{ env.IMAGE_TAG }}" | tr -d '\r')
+            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/frontend/values.yaml
+            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/backend/values.yaml
+            git config user.email "github-actions@ci.com"
+            git config user.name "GitHub Actions"
+            git add charts/frontend/values.yaml charts/backend/values.yaml
+            if ! git diff --cached --quiet; then
+              git commit -m "Update image tags to $CLEAN_TAG"
+              git push origin main
+            fi
+
+            
