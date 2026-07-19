@@ -89,6 +89,10 @@
               --disableNodeAudit
           env:
             NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          
+        - name: Post-cleanup report permissions
+          if: always()
+          run: sudo chown -R ubuntu:ubuntu .
 
         - uses: actions/upload-artifact@v4
           with:
@@ -109,7 +113,7 @@
         - uses: actions/checkout@v4
 
         - name: Trivy FS Scan
-          uses: aquasecurity/trivy-action@0.28.0
+          uses: aquasecurity/trivy-action@v0.28.0
           with:
             scan-type: fs
             scan-ref: ./${{ matrix.component }}
@@ -166,7 +170,7 @@
             fi
 
         - name: Trivy Image Scan
-          uses: aquasecurity/trivy-action@0.28.0
+          uses: aquasecurity/trivy-action@v0.28.0
           with:
             image-ref: ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
             severity: HIGH,CRITICAL
