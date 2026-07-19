@@ -203,12 +203,14 @@
         - name: Update image tags
           run: |
             cd k8s-repo
-            sed -i 's/tag: ".*/tag: "'"${{ env.IMAGE_TAG }}"'"/' charts/frontend/values.yaml
-            sed -i 's/tag: ".*/tag: "'"${{ env.IMAGE_TAG }}"'"/' charts/backend/values.yaml
+            sed -i 's/tag: .*/tag: \"${CLEAN_TAG}\"/" charts/frontend/values.yaml
+            sed -i 's/tag: .*/tag: \"${CLEAN_TAG}\"/" charts/backend/values.yaml
             git config user.email "github-actions@ci.com"
             git config user.name "GitHub Actions"
             git add charts/frontend/values.yaml charts/backend/values.yaml
             if ! git diff --cached --quiet; then
-              git commit -m "Update image tags to ${{ env.IMAGE_TAG }}"
+              git commit -m "Update image tags to ${CLEAN_TAG}"
               git push origin main
             fi
+
+            
