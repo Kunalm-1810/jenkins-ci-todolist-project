@@ -49,6 +49,8 @@
         - name: Quality Gate
           uses: sonarsource/sonarqube-quality-gate-action@v1
           timeout-minutes: 10
+          with:
+            scanMetadataReportfile: ${{ matrix.component }}/.scannerwork/report-task.txt
           env:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
