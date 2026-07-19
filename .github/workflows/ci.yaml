@@ -1,12 +1,35 @@
-    steps:
-      - name: Checkout deployment repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ vars.DEPLOYMENT_REPO }}
-          ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
-          path: k8s-repo
+  name: CI job test and debug manifest
 
-      # New Step: Validates if your runner can communicate and authenticate with the Manifest Repo
+  on:
+    push:
+      branches: [main]
+
+  permissions:
+    
+    contents: read
+
+  env:
+  
+    IMAGE_TAG: v-test-debug
+   
+
+  jobs:
+
+
+    # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
+    update-manifest:
+      runs-on: [self-hosted, Linux, x64]
+      
+      timeout-minutes: 10
+      steps:
+        - name: Checkout deployment repo
+          uses: actions/checkout@v4
+          with:
+            repository: ${{ vars.DEPLOYMENT_REPO }}
+            ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+            path: k8s-repo
+
+        # New Step: Validates if your runner can communicate and authenticate with the Manifest Repo
       - name: Verify GitHub Repo Access & Branch
         run: |
           echo "=== 🔒 Testing SSH Key Authentication & Repository Existence ==="
