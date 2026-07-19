@@ -1,0 +1,43 @@
+name: CI job test and debug manifest
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+    
+  contents: read
+
+env:
+
+  IMAGE_TAG: v-test-debug
+  
+
+jobs:
+
+
+  # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
+  update-manifest:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout deployment repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.DEPLOYMENT_REPO }}
+          ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+          path: k8s-repo
+
+      - name: Update image tags
+        run: |
+          cd k8s-repo
+          CLEAN_TAG=$(echo "${{ env.IMAGE_TAG }}" | tr -d '\r')
+          sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/frontend/values.yaml
+          sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/backend/values.yaml
+          git config user.email "github-actions@ci.com"
+          git config user.name "GitHub Actions"
+          git add charts/frontend/values.yaml charts/backend/values.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "Update image tags to $CLEAN_TAG"
+            git push origin main
+          fi
