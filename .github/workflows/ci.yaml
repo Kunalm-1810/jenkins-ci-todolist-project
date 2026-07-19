@@ -19,7 +19,7 @@
     # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
     update-manifest:
       runs-on: [self-hosted, Linux, x64]
-      
+      needs: build-and-push
       timeout-minutes: 10
       steps:
         - name: Checkout deployment repo
@@ -29,43 +29,16 @@
             ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
             path: k8s-repo
 
-        # New Step: Validates if your runner can communicate and authenticate with the Manifest Repo
-        - name: Update image tags and push
+        - name: Update image tags
           run: |
-            # 1. Write the target private key into an ephemeral file layer on the runner disk
-            mkdir -p ~/.ssh
-            echo "${{ secrets.DEPLOY_REPO_SSH_KEY }}" > ~/.ssh/gitops_deploy_key
-            chmod 600 ~/.ssh/gitops_deploy_key
-
-            # 2. Force Git to utilize this exact key pair for all SSH connections
-            export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitops_deploy_key -o StrictHostKeyChecking=no"
-
-            # 3. Clean up the trailing Windows carriage returns from the tag variable
-            CLEAN_TAG=$(echo "${{ env.IMAGE_TAG }}" | tr -d '\r')
-
             cd k8s-repo
-
-            echo "=== 🔎 Testing SSH Authentication ==="
-            git ls-remote git@github.com:${{ vars.DEPLOYMENT_REPO }}.git HEAD
-
-            # 4. Modify manifest tag lines cleanly using the single-quote pattern
-            sed -i 's/tag:.*/tag: "'"$CLEAN_TAG"'"/' charts/frontend/values.yaml
-            sed -i 's/tag:.*/tag: "'"$CLEAN_TAG"'"/' charts/backend/values.yaml
-
-            # 5. Configure Local Git Identities
+            CLEAN_TAG=$(echo "${{ env.IMAGE_TAG }}" | tr -d '\r')
+            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/frontend/values.yaml
+            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/backend/values.yaml
             git config user.email "github-actions@ci.com"
             git config user.name "GitHub Actions"
-
             git add charts/frontend/values.yaml charts/backend/values.yaml
-
-            # 6. Commit and Push back safely to the remote cluster configuration repo
             if ! git diff --cached --quiet; then
               git commit -m "Update image tags to $CLEAN_TAG"
               git push origin main
-              echo "SUCCESS: GitOps deployment tags synced successfully!"
-            else
-              echo "No tag modifications detected."
             fi
-
-            # 7. Security Housekeeping: Erase the raw key file from the runner disk layer when finished
-            rm -f ~/.ssh/gitops_deploy_key
