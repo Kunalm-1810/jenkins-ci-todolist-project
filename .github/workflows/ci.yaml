@@ -157,7 +157,7 @@
           id: vars
           run: |
             REGISTRY=${{ steps.ecr-login.outputs.registry }}
-            echo "image=${REGISTRY}/project-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+            echo "image=${REGISTRY}/mern-devsecops-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
 
         - name: Build image
           run: |
