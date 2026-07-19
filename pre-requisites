@@ -67,6 +67,11 @@ unzip awscliv2.zip
 sudo ./aws/install
 aws --version
 
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+
 
 #yq installation for yaml update 
 
@@ -177,4 +182,3 @@ sudo rm -rf /opt/dependency-check
 sudo apt-get autoremove -y
 sudo apt-get clean
 sudo apt-get Update
-che3c

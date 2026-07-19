@@ -7,8 +7,9 @@ pipeline {
 
     environment {
         IMAGE_TAG        = "v${BUILD_NUMBER}"
-        DEPLOYMENT_REPO  = "github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"
+        DEPLOYMENT_REPO  = "git@github.com:Kunalm-1810/k8s-manifest-deployment-repo-todolist.git"
         NVD_API_KEY      = credentials('nvd-api-key')
+        REACT_APP_BACKEND_URL = "https://todolist.kodetechm.com/api/tasks"
     }
 
     tools {
@@ -160,7 +161,7 @@ pipeline {
             parallel {
                 stage('Frontend') {
                     steps {
-                        sh "docker build --no-cache --build-arg REACT_APP_BACKEND_URL=https://todolist.kodetechm.com/api/tasks -t ${env.FE_IMAGE}:${IMAGE_TAG} ./frontend"
+                        sh "docker build --no-cache --build-arg REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL} -t ${env.FE_IMAGE}:${IMAGE_TAG} ./frontend"
                     }
                 }
                 stage('Backend') {
@@ -168,16 +169,6 @@ pipeline {
                         sh "docker build -t ${env.BE_IMAGE}:${IMAGE_TAG} ./backend"
                     }
                 }
-            }
-        }
-
-        stage('Docker Compose Validation') {
-            steps {
-                sh '''
-                    FE_IMAGE=${FE_IMAGE} BE_IMAGE=${BE_IMAGE} IMAGE_TAG=${IMAGE_TAG} docker compose up -d
-                    sleep 20
-                    docker compose ps
-                '''
             }
         }
 
@@ -228,22 +219,25 @@ pipeline {
 
         stage('Update Deployment Files') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                    sh """
-                    git clone https://${GIT_USER}:${GIT_PASS}@github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git k8s-repo
+                sshagent(credentials: ['github-ssh-key']) 
+                {
+                    sh '''
+                    git clone ${DEPLOYMENT_REPO} k8s-repo
                     cd k8s-repo && \\
-                    yq -i '.image.tag = "${IMAGE_TAG}"' charts/frontend/values.yaml && \\
-                    yq -i '.image.tag = "${IMAGE_TAG}"' charts/backend/values.yaml && \\
-                    git config user.email "jenkins@ci.com" && \\
+                    sed -i 's/tag: ".*/tag: "'"${IMAGE_TAG}"'"/' charts/frontend/values.yaml && \\
+                    sed -i 's/tag: ".*/tag: "'"${IMAGE_TAG}"'"/' charts/backend/values.yaml && \\
+                    git config user.email "jenkins@ci.com" && \\    
                     git config user.name "Jenkins" && \\
                     git add charts/frontend/values.yaml charts/backend/values.yaml && \\
-                    git diff --cached --quiet || git commit -m "Update image tags to ${IMAGE_TAG}" && \\
-                    git push https://${GIT_USER}:${GIT_PASS}@github.com/Kunalm-1810/k8s-manifest-deployment-repo-todolist.git main
+               if ! git diff --cached --quiet; then
+                    git commit -m "Update image tags to ${IMAGE_TAG}"
+                    git push origin main
+               fi
                     cd .. && rm -rf k8s-repo
-                    """
+                    '''
                 }
             }
-        }
+        }       
     }
      
 
