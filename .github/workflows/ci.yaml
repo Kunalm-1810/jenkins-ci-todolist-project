@@ -23,7 +23,7 @@
 
     # ---------- Stage 1: SonarQube code analysis + quality gate ----------
     sonarqube:
-      runs-on: self-hosted
+      runs-on: [self-hosted, Linux, x64]
       timeout-minutes: 15
       strategy:
         fail-fast: false
@@ -39,9 +39,9 @@
           with:
             projectBaseDir: ${{ matrix.component }}
             args: >
-              -Dsonar.projectKey=mern-${{ matrix.component }}
-              -Dsonar.sources=${{ matrix.component == 'frontend' && 'src' || '.' }}
-              -Dsonar.exclusions=node_modules/**
+              "-Dsonar.projectKey=mern-${{ matrix.component }}"
+              "-Dsonar.sources=${{ matrix.component == 'frontend' && 'src' || '.' }}"
+              "-Dsonar.exclusions=node_modules/**"
           env:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
             SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
@@ -54,7 +54,7 @@
 
     # ---------- Stage 2: OWASP Dependency Check (runs after Sonar gate passes) ----------
     dependency-check:
-      runs-on: self-hosted
+      runs-on: [self-hosted, Linux, x64]
       needs: sonarqube
       timeout-minutes: 15
       strategy:
@@ -96,7 +96,7 @@
 
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
-      runs-on: self-hosted
+      runs-on: [self-hosted, Linux, x64]
       needs: sonarqube
       timeout-minutes: 15
       strategy:
@@ -123,7 +123,7 @@
 
     # ---------- Stage 3: Build, scan, and push images (only after both scans pass) ----------
     build-and-push:
-      runs-on: self-hosted
+      runs-on: [self-hosted, Linux, x64]
       needs: [dependency-check, trivy-fs-scan]
       timeout-minutes: 30
       strategy:
@@ -145,7 +145,7 @@
           id: ecr-login
           uses: aws-actions/amazon-ecr-login@v2
           env:
-            AWS_REGION: ${{ env.AWS_REGION }}
+            AWS_REGION: ${{ vars.AWS_REGION }}
 
         - name: Set image name
           id: vars
@@ -157,7 +157,7 @@
           run: |
             if [ "${{ matrix.component }}" = "frontend" ]; then
               docker build --no-cache \
-                --build-arg REACT_APP_BACKEND_URL=${{ env.REACT_APP_BACKEND_URL }} \
+                --build-arg REACT_APP_BACKEND_URL=${{ vars.REACT_APP_BACKEND_URL }} \
                 -t ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }} ./frontend
             else
               docker build -t ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }} ./backend
@@ -183,14 +183,14 @@
 
     # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
     update-manifest:
-      runs-on: self-hosted
+      runs-on: [self-hosted, Linux, x64]
       needs: build-and-push
       timeout-minutes: 10
       steps:
         - name: Checkout deployment repo
           uses: actions/checkout@v4
           with:
-            repository: ${{ env.DEPLOYMENT_REPO }}
+            repository: ${{ vars.DEPLOYMENT_REPO }}
             ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
             path: k8s-repo
 
