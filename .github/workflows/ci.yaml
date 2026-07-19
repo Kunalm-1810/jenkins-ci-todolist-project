@@ -1,49 +1,23 @@
-  name: CI job test and debug manifest
+    steps:
+      - name: Checkout deployment repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.DEPLOYMENT_REPO }}
+          ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
+          path: k8s-repo
 
-  on:
-    push:
-      branches: [main]
-
-  permissions:
-    
-    contents: read
-
-  env:
-  
-    IMAGE_TAG: v-test-debug
-   
-
-  jobs:
-
-
-    # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
-    update-manifest:
-      runs-on: [self-hosted, Linux, x64]
-      
-      timeout-minutes: 10
-      steps:
-        - name: Checkout deployment repo
-          uses: actions/checkout@v4
-          with:
-            repository: ${{ vars.DEPLOYMENT_REPO }}
-            ssh-key: ${{ secrets.DEPLOY_REPO_SSH_KEY }}
-            path: k8s-repo
-
-        - name: Update image tags
-          run: |
-            cd k8s-repo
-            CLEAN_TAG=$(echo "${{ env.IMAGE_TAG }}" | tr -d '\r')
-            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/frontend/values.yaml
-            sed -i 's/tag: .*/tag: "'"${CLEAN_TAG}"'"/' charts/backend/values.yaml
-            git config user.email "github-actions@ci.com"
-            git config user.name "GitHub Actions"
-            git add charts/frontend/values.yaml charts/backend/values.yaml
-            if ! git diff --cached --quiet; then
-              git commit -m "Update image tags to $CLEAN_TAG"
-              git push origin main
-              echo "Manifest repo updated successfully"
-            else
-              echo "No tag changes detected"
-            fi
-
-            
+      # New Step: Validates if your runner can communicate and authenticate with the Manifest Repo
+      - name: Verify GitHub Repo Access & Branch
+        run: |
+          echo "=== 🔒 Testing SSH Key Authentication & Repository Existence ==="
+          
+          # Force git to use your SSH setup to query the remote repository branches
+          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no"
+          
+          if git ls-remote git@github.com:${{ vars.DEPLOYMENT_REPO }}.git HEAD; then
+            echo "✅ SUCCESS: GitHub Actions can reach and authenticate with your manifest repo!"
+          else
+            echo "❌ CRITICAL ERROR: Connection failed! GitHub Actions cannot reach the repository."
+            echo "Please verify that your DEPLOY_REPO_SSH_KEY secret matches the Deploy Key saved on the manifest repo."
+            exit 1
+          fi
