@@ -30,17 +30,17 @@
             path: k8s-repo
 
         # New Step: Validates if your runner can communicate and authenticate with the Manifest Repo
-      - name: Verify GitHub Repo Access & Branch
-        run: |
-          echo "=== 🔒 Testing SSH Key Authentication & Repository Existence ==="
-          
-          # Force git to use your SSH setup to query the remote repository branches
-          export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no"
-          
-          if git ls-remote git@github.com:${{ vars.DEPLOYMENT_REPO }}.git HEAD; then
-            echo "✅ SUCCESS: GitHub Actions can reach and authenticate with your manifest repo!"
-          else
-            echo "❌ CRITICAL ERROR: Connection failed! GitHub Actions cannot reach the repository."
-            echo "Please verify that your DEPLOY_REPO_SSH_KEY secret matches the Deploy Key saved on the manifest repo."
-            exit 1
-          fi
+        - name: Verify GitHub Repo Access & Branch
+          run: |
+            echo "=== 🔒 Testing SSH Key Authentication & Repository Existence ==="
+            
+            # Force git to use your SSH setup to query the remote repository branches
+            export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no"
+            
+            if git ls-remote git@github.com:${{ vars.DEPLOYMENT_REPO }}.git HEAD; then
+              echo "✅ SUCCESS: GitHub Actions can reach and authenticate with your manifest repo!"
+            else
+              echo "❌ CRITICAL ERROR: Connection failed! GitHub Actions cannot reach the repository."
+              echo "Please verify that your DEPLOY_REPO_SSH_KEY secret matches the Deploy Key saved on the manifest repo."
+              exit 1
+            fi
