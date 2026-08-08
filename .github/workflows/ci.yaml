@@ -34,8 +34,8 @@
           with:
             fetch-depth: 0   # full history improves Sonar's blame/age data
 
-        - name: SonarQube Scan
-          uses: sonarsource/sonarcloud-scan-action@v8
+        - name: SonarQube cloud Scan
+          uses: sonarsource/sonarqube-scan-action@v8
           with:
             projectBaseDir: ${{ matrix.component }}
             args: >
