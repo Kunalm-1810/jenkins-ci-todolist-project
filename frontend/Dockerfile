@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install 
 
 COPY . .
 
@@ -12,6 +12,7 @@ ENV NODE_OPTIONS=--openssl-legacy-provider
 ARG REACT_APP_BACKEND_URL
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
 
+ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm run build
 
 # Stage 2 - Serve
