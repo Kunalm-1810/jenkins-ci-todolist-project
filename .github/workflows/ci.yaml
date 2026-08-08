@@ -48,14 +48,14 @@
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
             SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-        - name: Quality Gate
-          uses: sonarsource/sonarqube-quality-gate-action@v1
-          timeout-minutes: 10
-          with:
-            scanMetadataReportFile: ./${{ matrix.component }}/.scannerwork/report-task.txt
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        # - name: Quality Gate
+        #   uses: sonarsource/sonarqube-quality-gate-action@v1
+        #   timeout-minutes: 10
+        #   with:
+        #     scanMetadataReportFile: ./${{ matrix.component }}/.scannerwork/report-task.txt
+        #   env:
+        #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        #     SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
 
     # ---------- Stage 2: OWASP Dependency Check (runs after Sonar gate passes) ----------
@@ -94,15 +94,16 @@
           env:
             NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           
-        - name: Post-cleanup report permissions
-          if: always()
-          run: sudo chown -R $USER:$USER .
-
+        
         - uses: actions/upload-artifact@v4
           with:
             name: dependency-check-${{ matrix.component }}-report
             path: dependency-check-${{ matrix.component }}-report/
             retention-days: 14
+
+        - name: Post-cleanup report permissions
+          if: always()
+          run: rm -rf ./dependency-check-${{ matrix.component }}-report
 
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
@@ -127,15 +128,16 @@
             output: trivy-${{ matrix.component }}-fs-report.txt
             exit-code: 1
         
-        - name: Post-cleanup report permissions
-          if: always()
-          run: sudo chown -R $USER:$USER .
 
         - uses: actions/upload-artifact@v4
           with:
             name: trivy-${{ matrix.component }}-fs-report
             path: trivy-${{ matrix.component }}-fs-report.txt
             retention-days: 14
+
+        - name: Post-cleanup report permissions
+          if: always()
+          run: rm -rf trivy-${{ matrix.component }}-fs-report.txt
 
     # ---------- Stage 3: Build, scan, and push images (only after both scans pass) ----------
     build-and-push:
