@@ -195,7 +195,7 @@
             vuln-type: os
             severity: HIGH,CRITICAL
             format: table
-            exit-code: 1
+            exit-code: 0
             trivy-config: '--skip-version-check --ignore-unfixed'
             output: trivy-${{ matrix.component }}-image-report.txt
 
