@@ -39,7 +39,7 @@
           with:
             projectBaseDir: ${{ matrix.component }}
             args: >
-              "-Dsonar.organization=your-sonarcloud-org-key"
+              "-Dsonar.organization=kunalm-1810"
               "-Dsonar.projectKey=mern-${{ matrix.component }}"
               "-Dsonar.sources=${{ matrix.component == 'frontend' && 'src' || '.' }}"
               "-Dsonar.exclusions=node_modules/**"
