@@ -196,6 +196,7 @@
             severity: HIGH,CRITICAL
             format: table
             exit-code: 1
+            trivy-config: --clear-cache
             output: trivy-${{ matrix.component }}-image-report.txt
 
         - uses: actions/upload-artifact@v4
