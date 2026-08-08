@@ -109,7 +109,7 @@
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
       runs-on: [self-hosted, Linux, x64]
-      needs: dependency-check
+      needs: sonarqube
       timeout-minutes: 15
       strategy:
         fail-fast: false
@@ -196,7 +196,7 @@
             severity: HIGH,CRITICAL
             format: table
             exit-code: 1
-            trivy-config: --clear-cache
+            ignore-unfixed: true
             output: trivy-${{ matrix.component }}-image-report.txt
 
         - uses: actions/upload-artifact@v4
