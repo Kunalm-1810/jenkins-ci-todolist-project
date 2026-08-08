@@ -35,25 +35,27 @@
             fetch-depth: 0   # full history improves Sonar's blame/age data
 
         - name: SonarQube Scan
-          uses: sonarsource/sonarqube-scan-action@v8
+          uses: sonarsource/sonarcloud-scan-action@v8
           with:
             projectBaseDir: ${{ matrix.component }}
             args: >
+              "-Dsonar.host.url=https://sonarcloud.io"
               "-Dsonar.organization=kunalm-1810"
               "-Dsonar.projectKey=mern-${{ matrix.component }}"
               "-Dsonar.sources=${{ matrix.component == 'frontend' && 'src' || '.' }}"
               "-Dsonar.exclusions=node_modules/**"
+              "-Dsonar.qualitygate.wait=true"
           env:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
             #SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
-        - name: Quality Gate
-          uses: sonarsource/sonarcloud-quality-gate-action@v1
-          timeout-minutes: 10
-          with:
-            scanMetadataReportfile: ./${{ matrix.component }}/.scannerwork/report-task.txt
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # - name: Quality Gate
+        #   uses: sonarsource/sonarcloud-quality-gate-action@v1
+        #   timeout-minutes: 10
+        #   with:
+        #     scanMetadataReportfile: ./${{ matrix.component }}/.scannerwork/report-task.txt
+        #   env:
+        #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     # ---------- Stage 2: OWASP Dependency Check (runs after Sonar gate passes) ----------
     dependency-check:
