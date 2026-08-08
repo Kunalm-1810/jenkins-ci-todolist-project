@@ -86,7 +86,8 @@
             project: mern-${{ matrix.component }}
             path: ./${{ matrix.component }}
             format: HTML
-            out: dependency-check-${{ matrix.component }}-report
+            out: ./${{ matrix.component }}/dependency-check-report
+            docker_options: --user 1001:1001
             args: >
               --enableNodeAudit
               --failOnCVSS 7
@@ -98,12 +99,12 @@
         - uses: actions/upload-artifact@v4
           with:
             name: dependency-check-${{ matrix.component }}-report
-            path: dependency-check-${{ matrix.component }}-report/
+            path: ./${{ matrix.component }}/dependency-check-report/
             retention-days: 14
 
         - name: Post-cleanup report permissions
           if: always()
-          run: rm -rf ./dependency-check-${{ matrix.component }}-report
+          run: rm -rf ./${{ matrix.component }}/dependency-check-report/
 
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
