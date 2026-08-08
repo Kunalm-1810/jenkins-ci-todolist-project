@@ -84,15 +84,15 @@
             format: HTML
             out: dependency-check-${{ matrix.component }}-report
             args: >
-              --exclude "**/node_modules/**"
-              --disableOssIndex
-              --disableNodeAudit
+              --enableNodeAudit
+              --failOnCVSS 7
+              
           env:
             NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           
         - name: Post-cleanup report permissions
           if: always()
-          run: sudo chown -R ubuntu:ubuntu .
+          run: sudo chown -R $USER:$USER .
 
         - uses: actions/upload-artifact@v4
           with:
@@ -118,8 +118,14 @@
             scan-type: fs
             scan-ref: ./${{ matrix.component }}
             severity: HIGH,CRITICAL
+            scanners: secret
             format: table
             output: trivy-${{ matrix.component }}-fs-report.txt
+            exit-code: 1
+        
+        - name: Post-cleanup report permissions
+          if: always()
+          run: sudo chown -R $USER:$USER .
 
         - uses: actions/upload-artifact@v4
           with:
@@ -169,13 +175,19 @@
               docker build -t ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }} ./backend
             fi
 
+        - name: Push to ECR
+          run: docker push ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
+
+
         - name: Trivy Image Scan
           uses: aquasecurity/trivy-action@v0.35.0
           with:
+            scan-type: image
             image-ref: ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
+            vuln-type: os
             severity: HIGH,CRITICAL
             format: table
-            exit-code: 0
+            exit-code: 1
             output: trivy-${{ matrix.component }}-image-report.txt
 
         - uses: actions/upload-artifact@v4
@@ -184,8 +196,7 @@
             path: trivy-${{ matrix.component }}-image-report.txt
             retention-days: 14
 
-        - name: Push to ECR
-          run: docker push ${{ steps.vars.outputs.image }}:${{ env.IMAGE_TAG }}
+      
 
     # ---------- Stage 4: Update GitOps manifest repo (only after both images are pushed) ----------
     update-manifest:
