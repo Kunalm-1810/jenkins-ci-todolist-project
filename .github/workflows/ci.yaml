@@ -109,7 +109,7 @@
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
       runs-on: [self-hosted, Linux, x64]
-      needs: sonarqube
+      needs: dependency-check
       timeout-minutes: 15
       strategy:
         fail-fast: false
