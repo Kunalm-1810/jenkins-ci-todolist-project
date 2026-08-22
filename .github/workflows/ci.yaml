@@ -104,7 +104,7 @@
 
         - name: Post-cleanup report permissions
           if: always()
-          run: sudo chown -R $USER:$USER .
+          run: chown -R $USER:$USER .
 
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
@@ -139,7 +139,7 @@
 
         - name: Post-cleanup report permissions
           if: always()
-          run: sudo chown -R $USER:$USER .
+          run: chown -R $USER:$USER .
 
     # ---------- Stage 3: Build, scan, and push images (only after both scans pass) ----------
     build-and-push:
