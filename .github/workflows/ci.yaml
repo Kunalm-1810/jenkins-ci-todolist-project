@@ -62,7 +62,7 @@
     dependency-check:
       runs-on: [self-hosted, Linux, x64]
       needs: sonarqube
-      timeout-minutes: 15
+      timeout-minutes: 30
       strategy:
         fail-fast: false
         matrix:
