@@ -184,3 +184,5 @@ sudo apt-get clean
 sudo apt-get Update
 
 ──────────────────────────────────────────────────
+sonar sube run as docker container
+docker run -d --name sonarqube-server -p 9000:9000 sonarqube:community
