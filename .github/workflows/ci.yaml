@@ -87,7 +87,7 @@
             path: ./${{ matrix.component }}
             format: HTML
             out: ./${{ matrix.component }}/dependency-check-report
-            docker_options: --user 1001:1001
+            docker_options: --user "$(id -u):$(id -g)"
             args: >
               --enableNodeAudit
               --failOnCVSS 7
@@ -104,7 +104,10 @@
 
         - name: Post-cleanup report permissions
           if: always()
-          run: chown -R $USER:$USER .
+          run: |
+            sleep 2
+            docker run --rm -v "${{ github.workspace }}:/workspace" alpine \
+              chown -R $(id -u):$(id -g) /workspace
 
     # ---------- Stage 2: Trivy filesystem scan (runs in parallel with dependency-check) ----------
     trivy-fs-scan:
@@ -139,7 +142,10 @@
 
         - name: Post-cleanup report permissions
           if: always()
-          run: chown -R $USER:$USER .
+          run: |
+            sleep 2
+            docker run --rm -v "${{ github.workspace }}:/workspace" alpine \
+              chown -R $(id -u):$(id -g) /workspace
 
     # ---------- Stage 3: Build, scan, and push images (only after both scans pass) ----------
     build-and-push:
