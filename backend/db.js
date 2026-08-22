@@ -3,8 +3,7 @@ const mongoose = require("mongoose");
 module.exports = async () => {
     try {
         const connectionParams = {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+        
         };
         const useDBAuth = process.env.USE_DB_AUTH || false;
         if(useDBAuth){

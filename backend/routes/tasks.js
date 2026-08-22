@@ -7,7 +7,8 @@ router.post("/", async (req, res) => {
         const task = await new Task(req.body).save();
         res.send(task);
     } catch (error) {
-        res.send(error);
+        console.error("GET /tasks error:", error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -16,7 +17,8 @@ router.get("/", async (req, res) => {
         const tasks = await Task.find();
         res.send(tasks);
     } catch (error) {
-        res.send(error);
+        console.error("GET /tasks error:", error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -28,7 +30,8 @@ router.put("/:id", async (req, res) => {
         );
         res.send(task);
     } catch (error) {
-        res.send(error);
+        console.error("GET /tasks error:", error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -37,7 +40,8 @@ router.delete("/:id", async (req, res) => {
         const task = await Task.findByIdAndDelete(req.params.id);
         res.send(task);
     } catch (error) {
-        res.send(error);
+        console.error("GET /tasks error:", error);
+        res.status(500).send({ message: error.message });
     }
 });
 
