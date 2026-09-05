@@ -16,8 +16,7 @@
 A production-oriented **3-tier MERN stack TodoList application** deployed on **AWS EKS** using a fully automated **DevSecOps CI/CD pipeline**. Every code push triggers an automated pipeline that enforces code quality, performs multi-layer security scanning, builds and publishes versioned Docker images to AWS ECR, and updates Kubernetes manifests via GitOps — with **ArgoCD** automatically syncing the cluster to the desired state.
 
 ```
-Developer pushes code → Jenkins detects via webhook → Security & quality gates →
-Docker build & push to ECR → Helm values updated → ArgoCD syncs to EKS cluster
+"C:\Users\swapn\Downloads\jenkinsciworkflow2.0.png"
 ```
 
 ### Application
@@ -63,12 +62,8 @@ A full-stack **Todo List** app where users can create, complete, and delete task
 | **Code Quality** | SonarQube LTS | Static analysis, quality gates |
 | **Dependency Scan** | OWASP Dependency-Check v10 | Third-party CVE detection |
 | **Image/FS Scan** | Trivy | Filesystem & container image scanning |
-| **Orchestration** | AWS EKS (Kubernetes) | Container orchestration |
-| **Package Manager** | Helm | Kubernetes manifest templating |
-| **GitOps** | ArgoCD | Automated cluster reconciliation |
-| **Monitoring** | Prometheus + Grafana | Metrics collection & dashboards |
-| **Cloud** | AWS (EC2, ECR, EKS, IAM) | Infrastructure |
-| **SCM** | GitHub | Source & manifest repositories |
+| **Image push to ECR** | AWS ECR | Image on aws conatiner registry |
+| **Source Control** | Github | Source code management and Jenkins webhook trigger | 
 
 ---
 
@@ -97,56 +92,7 @@ A full-stack **Todo List** app where users can create, complete, and delete task
 ### CI/CD Pipeline Architecture
 
 ```
-┌──────────┐     webhook      ┌─────────────────────────────────────────────────────────────────┐
-│Developer │ ──────────────▶  │                        JENKINS CI SERVER                        │
-│  pushes  │                  │                                                                  │
-└──────────┘                  │  ┌─────────┐  ┌──────────────────────────┐  ┌────────────────┐  │
-                              │  │Checkout │─▶│    SonarQube Analysis    │─▶│  Quality Gate  │  │
-                              │  └─────────┘  │  (Frontend ║ Backend)    │  └───────┬────────┘  │
-                              │               └──────────────────────────┘          │           │
-                              │                                                      ▼           │
-                              │  ┌──────────────────────────┐  ┌────────────────────────────┐   │
-                              │  │   OWASP Dependency-Check  │  │     Trivy FS Scan          │   │
-                              │  │  (Frontend ║ Backend)     │  │  (Frontend ║ Backend)      │   │
-                              │  └──────────────────────────┘  └────────────────────────────┘   │
-                              │                    │                          │                  │
-                              │                    └──────────┬───────────────┘                  │
-                              │                               ▼                                  │
-                              │               ┌──────────────────────────┐                       │
-                              │               │    Docker Build Images   │                       │
-                              │               │  (Frontend ║ Backend)    │                       │
-                              │               └──────────────────────────┘                       │
-                              │                               │                                  │
-                              │                               ▼                                  │
-                              │               ┌──────────────────────────┐                       │
-                              │               │     Push to AWS ECR      │                       │
-                              │               │  :v{BUILD_NUMBER} tag    │                       │
-                              │               └──────────────────────────┘                       │
-                              │                               │                                  │
-                              │                               ▼                                  │
-                              │               ┌──────────────────────────┐                       │
-                              │               │   Trivy Image Scan       │                       │
-                              │               │  (Frontend ║ Backend)    │                       │
-                              │               └──────────────────────────┘                       │
-                              │                               │                                  │
-                              │                               ▼                                  │
-                              │               ┌──────────────────────────┐                       │
-                              │               │  Update Helm values.yaml │                       │
-                              │               │  git push → manifest repo│                       │
-                              │               └──────────────────────────┘                       │
-                              └─────────────────────────────────────────────────────────────────┘
-                                                              │
-                                                              ▼ (GitOps)
-                              ┌───────────────────────────────────────────────────────────────┐
-                              │                         ArgoCD                                 │
-                              │   Detects drift in manifest repo → Syncs EKS cluster          │
-                              └───────────────────────────────────────────────────────────────┘
-                                                              │
-                                                              ▼
-                              ┌───────────────────────────────────────────────────────────────┐
-                              │                       AWS EKS Cluster                          │
-                              │         Frontend Pod  │  Backend Pod  │  MongoDB Pod           │
-                              └───────────────────────────────────────────────────────────────┘
+"C:\Users\swapn\OneDrive\Pictures\devsecops-ci.png"
 ```
 
 ---
@@ -587,5 +533,5 @@ sudo apt-get autoremove -y && sudo apt-get clean
 ```
 
 ---
-
+CI complete 
 *Built with ❤️ as a hands-on DevSecOps learning project — covering the full lifecycle from code commit to production deployment on AWS EKS.*
