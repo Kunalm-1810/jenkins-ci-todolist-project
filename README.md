@@ -1,4 +1,4 @@
-# 📋 MERN Stack TodoList — End-to-End DevSecOps CI/CD on Kubernetes
+# 📋 MERN Stack TodoList — DevSecOps CI Pipeline with Jenkins
 
 [![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?logo=jenkins&logoColor=white)](https://www.jenkins.io/)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
@@ -6,17 +6,18 @@
 [![SonarQube](https://img.shields.io/badge/SonarQube-Code%20Quality-4E9BCD?logo=sonarqube&logoColor=white)](https://www.sonarqube.org/)
 [![Trivy](https://img.shields.io/badge/Trivy-Security%20Scan-1904DA?logo=aqua&logoColor=white)](https://trivy.dev/)
 [![AWS ECR](https://img.shields.io/badge/AWS%20ECR-Registry-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/ecr/)
-[![Helm](https://img.shields.io/badge/Helm-Package%20Manager-0F1689?logo=helm&logoColor=white)](https://helm.sh/)
-[![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-EF7B4D?logo=argo&logoColor=white)](https://argoproj.github.io/cd/)
+
 
 ---
 
 ## 📖 Project Overview
 
-A production-oriented **3-tier MERN stack TodoList application** deployed on **AWS EKS** using a fully automated **DevSecOps CI/CD pipeline**. Every code push triggers an automated pipeline that enforces code quality, performs multi-layer security scanning, builds and publishes versioned Docker images to AWS ECR, and updates Kubernetes manifests via GitOps — with **ArgoCD** automatically syncing the cluster to the desired state.
+A production-oriented 3-tier MERN Stack TodoList application demonstrating a complete DevSecOps Continuous Integration workflow with Jenkins. Every code push automatically triggers a secure CI pipeline that validates code quality with SonarQube, enforces quality gates, scans dependencies using OWASP Dependency-Check, performs Trivy filesystem and Docker image vulnerability scans, builds versioned container images with Docker, and publishes them to AWS ECR.
+
+The project focuses on shift-left security, automated quality enforcement, parallel CI execution, immutable image versioning, and artifact traceability, providing a practical implementation of modern DevSecOps CI practices..
 
 ```
-"C:\Users\swapn\Downloads\jenkinsciworkflow2.0.png"
+![Jenkins CI Workflow](images/jenkins-ci-workflow.png)
 ```
 
 ### Application
@@ -92,7 +93,7 @@ A full-stack **Todo List** app where users can create, complete, and delete task
 ### CI/CD Pipeline Architecture
 
 ```
-"C:\Users\swapn\OneDrive\Pictures\devsecops-ci.png"
+![DevSecOps CI Pipeline](images/devsecops-ci.png)
 ```
 
 ---
@@ -534,4 +535,7 @@ sudo apt-get autoremove -y && sudo apt-get clean
 
 ---
 CI complete 
-*Built with ❤️ as a hands-on DevSecOps learning project — covering the full lifecycle from code commit to production deployment on AWS EKS.*
+
+*Built as a hands-on DevSecOps project demonstrating automated CI,
+code quality enforcement, dependency scanning, filesystem scanning,
+Docker image security scanning, and publishing versioned images to AWS ECR.*
