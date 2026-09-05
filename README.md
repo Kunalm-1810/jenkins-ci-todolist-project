@@ -16,10 +16,10 @@ A production-oriented 3-tier MERN Stack TodoList application demonstrating a com
 
 The project focuses on shift-left security, automated quality enforcement, parallel CI execution, immutable image versioning, and artifact traceability, providing a practical implementation of modern DevSecOps CI practices..
 
-```
+
 ![Jenkins CI Workflow](Images/jenkins-ci-workflow.png)
 
-```
+
 
 ### Application
 
