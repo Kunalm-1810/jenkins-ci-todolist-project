@@ -270,7 +270,7 @@ java -version
 ```
 
 ### 3. Jenkins
-
+[Jenkins doumnetations](https://www.jenkins.io/doc/book/installing/linux/#debianubuntu)
 ```bash
 sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
   https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
@@ -287,7 +287,7 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
 ### 4. Docker
-
+[Docker official Documentation](https://docs.docker.com/engine/install/ubuntu/)
 ```bash
 sudo apt install -y ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -306,7 +306,7 @@ sudo systemctl restart jenkins
 ```
 
 ### 5. Trivy
-
+[Trivy official Doumnetation](https://trivy.dev/docs/latest/getting-started/installation/)
 ```bash
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | \
   gpg --dearmor | sudo tee /etc/apt/keyrings/trivy.gpg > /dev/null
@@ -319,7 +319,7 @@ sudo apt-get update && sudo apt-get install -y trivy
 ```
 
 ### 6. AWS CLI
-
+[AWS CLI official Doumnentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 ```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 sudo apt install -y unzip && unzip awscliv2.zip
