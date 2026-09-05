@@ -19,7 +19,7 @@
     #REACT_APP_BACKEND_URL: https://todolist.kodetechm.com/api/tasks
 
   jobs:
-
+    
 
     # ---------- Stage 1: SonarQube code analysis + quality gate ----------
     sonarqube:
@@ -166,6 +166,10 @@
         #   with:
         #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         #     aws-region: ${{ env.AWS_REGION }}
+
+        
+
+
 
         - name: Login to ECR
           id: ecr-login

@@ -2,187 +2,238 @@
 # Jenkins CI Server - Pre-requisites Setup (Ubuntu 22.04)
 # ============================================================
 
-# Update system
+## 🔧 Server Setup
+
+> All steps target **Ubuntu 22.04** on an AWS EC2 instance.
+
+### 1. System Update
+
+```bash
 sudo apt update -y && sudo apt upgrade -y
+```
 
-# ── Java (required for Jenkins) ──────────────────────────────
-sudo apt update
-sudo apt install fontconfig openjdk-21-jre
+### 2. Java (Jenkins dependency)
+
+```bash
+sudo apt install -y fontconfig openjdk-21-jre
 java -version
+```
 
-# ── Git ──────────────────────────────────────────────────────
-sudo apt install -y git
-git --version
-
-# ── Jenkins ──────────────────────────────────────────────────
+### 3. Jenkins
+[Jenkins documentation](https://www.jenkins.io/doc/book/installing/linux/#debianubuntu)
+```bash
 sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
   https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+
 echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
   https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
   /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt update
-sudo apt install jenkins -y
-sudo systemctl enable jenkins
-sudo systemctl start jenkins
 
-# Get initial admin password
+sudo apt update && sudo apt install -y jenkins
+sudo systemctl enable --now jenkins
+
+# Retrieve initial admin password
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
 
-# ── Docker ───────────────────────────────────────────────────
+### 4. Docker
+[Docker official documentation](https://docs.docker.com/engine/install/ubuntu/)
+```bash
 sudo apt install -y ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
   https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
   | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
 sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io
-sudo systemctl start docker
-sudo systemctl enable docker
+sudo systemctl enable --now docker
 
-# Allow Jenkins to run Docker commands
-sudo usermod -aG docker ubuntu && newgrp docker
-sudo usermod -aG docker jenkins && newgrp docker
+# Grant Jenkins access to Docker socket
+sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
+```
 
-# ── Trivy ────────────────────────────────────────────────────
-# Add Trivy key properly
+### 5. Trivy
+[Trivy official documentation](https://trivy.dev/docs/latest/getting-started/installation/)
+```bash
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | \
   gpg --dearmor | sudo tee /etc/apt/keyrings/trivy.gpg > /dev/null
 
-# Add repo with signed-by
-echo "deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | \
+echo "deb [signed-by=/etc/apt/keyrings/trivy.gpg] \
+  https://aquasecurity.github.io/trivy-repo/deb generic main" | \
   sudo tee /etc/apt/sources.list.d/trivy.list > /dev/null
 
-
-
-# add and install
 sudo apt-get update && sudo apt-get install -y trivy
-trivy --version
+```
 
-
-# ── AWS CLI (for ECR push) ───────────────────────────────────
+### 6. AWS CLI
+[AWS CLI official documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-sudo apt install -y unzip
-unzip awscliv2.zip
+sudo apt install -y unzip && unzip awscliv2.zip
 sudo ./aws/install
 aws --version
+```
 
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
+### 7. OWASP Dependency-Check
 
-
-
-#yq installation for yaml update 
-
-sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
-sudo chmod +x /usr/bin/yq
-yq -i --version
-
-
-OWASP dependncy installation
-
+```bash
 cd /opt
 sudo wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
 sudo unzip dependency-check-10.0.4-release.zip
 sudo chmod +x /opt/dependency-check/bin/dependency-check.sh
+```
 
+> ⚠️ **Run once manually** to pre-populate the NVD database (takes 10–15 min):
+> ```bash
+> /opt/dependency-check/bin/dependency-check.sh \
+>   --updateonly \
+>   --nvdApiKey <YOUR_NVD_API_KEY>
+> ```
+> Get a free API key at: https://nvd.nist.gov/developers/request-an-api-key
+
+### 8. SonarQube (Docker container on same server)
+
+```bash
 docker run -d \
   --name sonarqube \
   --restart always \
   -p 9000:9000 \
-  sonarqube:lts-community 
+  sonarqube:lts-community
+```
 
+> Access at `http://<EC2-IP>:9000` — default login: `admin / admin`
 
+---
 
+## 🔌 Jenkins Configuration
 
- plugins Required in jenkins:
+### Required Plugins
 
-GitHub Integration
+Go to **Manage Jenkins → Plugins → Available plugins** and install:
 
-SonarQube Scanner
+| Plugin | Purpose |
+|---|---|
+| GitHub Integration | Webhook-triggered builds on push |
+| SonarQube Scanner | SonarQube analysis integration |
+| NodeJS | Managed Node.js tool installation |
+| Docker | Docker build/push steps |
+| Docker Compose Build Step | Compose validation support |
+| OWASP Dependency-Check | Scan report publishing |
+| SSH Agent | SSH key injection for Git operations |
+| Blue Ocean *(optional)* | Visual pipeline UI |
 
-NodeJS
+> AWS credentials via IAM Role on EC2 — no plugin needed.
+> Trivy and yq are CLI tools — no plugin needed.
 
-Docker
+### Manage Tools
 
-Docker Compose Build Step
+**Manage Jenkins → Tools:**
 
-OWASP Dependency-Check
+| Tool | Name to Set | Notes |
+|---|---|---|
+| SonarQube Scanner | `sonar-scanner` | Auto-install latest |
+| NodeJS | `NodeJS-18` | Version 18.x |
+| Git | *(default)* | Verify path |
 
-Optional but useful:
-Blue Ocean — better pipeline visualization
+### Manage System
 
-AWS → IAM role on EC2, no plugin needed
+**Manage Jenkins → System → SonarQube installations:**
 
-trivy → CLI tool, no plugin needed
+| Field | Value |
+|---|---|
+| Name | `sonarqube-server` |
+| Server URL | `http://<EC2-IP>:9000` |
+| Auth Token | Select `sonarqube-token` credential |
 
-yq → CLI tool, no plugin needed
+### Credentials
 
+**Manage Jenkins → Credentials → Global → Add Credential:**
 
-add credentails in jenkins credentails
-and adding 
+| Credential ID | Kind | Description |
+|---|---|---|
+| `sonarqube-token` | Secret text | SonarQube global analysis token |
+| `nvd-api-key` | Secret text | NVD API key for OWASP scans |
+| `github-ssh-key` | SSH Username with private key | SSH key for pushing to manifest repo |
 
+> AWS credentials are provided via **IAM Role attached to the EC2 instance** — no stored credentials needed.
 
-jenkins manage tools 
-add sonar-Scanner
-git installations
+### GitHub Webhook
 
+In your GitHub repo → **Settings → Webhooks → Add webhook:**
 
-jenkins manage system
-in sonarqube installations
-set name sonarqube-server
-url http://ip:9000
-server auth token credentials added 
+| Field | Value |
+|---|---|
+| Payload URL | `http://<EC2-IP>:8080/github-webhook/` |
+| Content type | `application/json` |
+| Trigger | Just the push event |
 
+### Create Pipeline Job
 
-jenkins manage credentails
-add github username and token
-add docker username and token
-add github username and ssh private key
-add sonarqube token
-\
+1. **New Item** → Pipeline → enter a name
+2. **Build Triggers** → ✅ GitHub hook trigger for GITScm polling
+3. **Pipeline** → Pipeline script from SCM
+   - SCM: `Git`
+   - Repository URL: your CI repo URL
+   - Credentials: `github-credentials`
+   - Branch: `*/main`
+   - Script Path: `Jenkinsfile`
+4. **Save**
 
+---
 
+## 📄 SonarQube Setup
 
-docker sonarqube conatainer delete
-and
-cleanup EC2
-# Stop services
-sudo systemctl stop jenkins docker 2>/dev/null
+### 1. Create Projects
 
-# Remove Jenkins
+**Projects → Create Project → Manually:**
+
+| Project Key | Display Name |
+|---|---|
+| `mern-frontend` | MERN Frontend |
+| `mern-backend` | MERN Backend |
+
+### 2. Generate Token
+
+**My Account → Security → Generate Tokens:**
+- Name: `jenkins-token`
+- Type: `Global Analysis Token`
+- Copy the token → add to Jenkins as `sonarqube-token` (Secret text)
+
+---
+
+## 🧹 Cleanup
+
+### Remove SonarQube container
+```bash
+docker stop sonarqube && docker rm sonarqube
+```
+
+### Full EC2 teardown
+```bash
+sudo systemctl stop jenkins docker
+
 sudo apt-get remove --purge -y jenkins
 sudo rm -f /etc/apt/sources.list.d/jenkins.list
 sudo rm -f /etc/apt/keyrings/jenkins-keyring.asc
 
-# Remove Docker
 sudo apt-get remove --purge -y docker-ce docker-ce-cli containerd.io
 sudo rm -f /etc/apt/sources.list.d/docker.list
 sudo rm -f /etc/apt/keyrings/docker.asc
 
-# Remove Trivy
 sudo apt-get remove --purge -y trivy
 sudo rm -f /etc/apt/sources.list.d/trivy.list
 sudo rm -f /etc/apt/keyrings/trivy.gpg
 
-# Remove Java
-sudo apt-get remove --purge -y openjdk-21-jdk openjdk-21-jdk-headless openjdk-21-jre openjdk-21-jre-headless
+sudo apt-get remove --purge -y openjdk-21-jre
 
-# Remove AWS CLI
-sudo rm -rf /usr/local/aws-cli /usr/local/bin/aws /tmp/aws /tmp/awscliv2.zip
+sudo rm -rf /usr/local/aws-cli /usr/local/bin/aws
 
-# Remove yq
-sudo rm -f /usr/bin/yq
-
-# Remove OWASP
 sudo rm -rf /opt/dependency-check
 
-# Clean apt
-sudo apt-get autoremove -y
-sudo apt-get clean
-sudo apt-get Update
+sudo rm -f /usr/bin/yq
 
-──────────────────────────────────────────────────
-sonar sube run as docker container
-docker run -d --name sonarqube-server -p 9000:9000 sonarqube:community
+sudo apt-get autoremove -y && sudo apt-get clean
+```
